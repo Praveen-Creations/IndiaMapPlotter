@@ -116,6 +116,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -124,8 +125,44 @@
                         <TextBlock Text="Data Preview" Foreground="White" FontSize="14" FontWeight="Bold"/>
                     </Border>
 
+                    <!-- Selected Record Details Panel -->
+                    <Border Grid.Row="1" x:Name="SelectedRecordPanel" 
+                            Background="#E3F2FD" 
+                            BorderBrush="#2196F3" 
+                            BorderThickness="0,0,0,1" 
+                            Padding="10"
+                            Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="Selected Record" FontWeight="Bold" FontSize="13" Margin="0,0,0,8" Foreground="#1976D2"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Row:" FontWeight="SemiBold" Margin="0,2"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SelectedRowText" Text="-" Margin="10,2"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Latitude:" FontWeight="SemiBold" Margin="0,2"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SelectedLatText" Text="-" Margin="10,2"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Longitude:" FontWeight="SemiBold" Margin="0,2"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SelectedLngText" Text="-" Margin="10,2"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Setup Type:" FontWeight="SemiBold" Margin="0,2"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SelectedTypeText" Text="-" Margin="10,2"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Data Grid -->
-                    <DataGrid Grid.Row="1" x:Name="DataGrid" 
+                    <DataGrid Grid.Row="2" x:Name="DataGrid" 
                               AutoGenerateColumns="False" 
                               IsReadOnly="True"
                               AlternatingRowBackground="#F5F5F5"

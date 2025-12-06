@@ -29,6 +29,10 @@ namespace IndiaMapPlotter
             _excelReader = new ExcelReader();
             _exportService = new ExportService();
 
+            // Subscribe to both map clicks and DataGrid selection
+            _mapManager.PointClicked += OnPointClicked;
+            DataGrid.SelectionChanged += DataGrid_SelectionChanged;
+
             // Initialize map
             Loaded += MainWindow_Loaded;
         }
@@ -148,7 +152,7 @@ namespace IndiaMapPlotter
         /// <summary>
         /// Handles Export Map button click
         /// </summary>
-        private void ExportMap_Click(object sender, RoutedEventArgs e)
+        private async void ExportMap_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new SaveFileDialog
             {
@@ -161,9 +165,63 @@ namespace IndiaMapPlotter
             {
                 try
                 {
+                    UpdateStatus("Preparing map for export...", false);
+                    
+                    // Store current viewport state
+                    var viewport = MapControl.Map?.Navigator?.Viewport;
+                    var currentResolution = viewport?.Resolution;
+                    var currentCenterX = viewport?.CenterX;
+                    var currentCenterY = viewport?.CenterY;
+                    
+                    // Zoom out to show all of India with all points
+                    if (_loadedPoints.Count > 0)
+                    {
+                        // Zoom to fit all points with padding
+                        var minLat = _loadedPoints.Min(p => p.Latitude);
+                        var maxLat = _loadedPoints.Max(p => p.Latitude);
+                        var minLng = _loadedPoints.Min(p => p.Longitude);
+                        var maxLng = _loadedPoints.Max(p => p.Longitude);
+
+                        var minMercator = Mapsui.Projections.SphericalMercator.FromLonLat(minLng, minLat);
+                        var maxMercator = Mapsui.Projections.SphericalMercator.FromLonLat(maxLng, maxLat);
+
+                        var padding = 0.15; // 15% padding around the points (reduced for better state name visibility)
+                        var width = maxMercator.x - minMercator.x;
+                        var height = maxMercator.y - minMercator.y;
+
+                        var extent = new Mapsui.MRect(
+                            minMercator.x - width * padding,
+                            minMercator.y - height * padding,
+                            maxMercator.x + width * padding,
+                            maxMercator.y + height * padding
+                        );
+
+                        MapControl.Map?.Navigator?.ZoomToBox(extent);
+                    }
+                    else
+                    {
+                        // If no points, zoom to show India with clear state names
+                        var indiaCenter = Mapsui.Projections.SphericalMercator.FromLonLat(78.0, 22.0);
+                        MapControl.Map?.Navigator?.CenterOn(new Mapsui.MPoint(indiaCenter.x, indiaCenter.y));
+                        MapControl.Map?.Navigator?.ZoomTo(1200000); // Good zoom for Indian states
+                    }
+                    
+                    // Wait for map to refresh
+                    await Task.Delay(500);
+                    MapControl.Refresh();
+                    await Task.Delay(300);
+                    
                     UpdateStatus("Exporting map...", false);
                     
                     var success = _exportService.ExportToPng(MapControl, dialog.FileName);
+                    
+                    // Restore original viewport
+                    if (currentCenterX.HasValue && currentCenterY.HasValue && currentResolution.HasValue)
+                    {
+                        MapControl.Map?.Navigator?.CenterOn(new Mapsui.MPoint(currentCenterX.Value, currentCenterY.Value));
+                        MapControl.Map?.Navigator?.ZoomTo(currentResolution.Value);
+                        MapControl.Refresh();
+                    }
                     
                     if (success)
                     {
@@ -199,6 +257,7 @@ namespace IndiaMapPlotter
                 
                 DataGrid.ItemsSource = null;
                 ErrorExpander.Visibility = Visibility.Collapsed;
+                HideSelectedRecord();
                 
                 UpdateCounters();
                 UpdateStatus("Map cleared.", false);
@@ -206,6 +265,67 @@ namespace IndiaMapPlotter
                 ExportMapButton.IsEnabled = false;
                 ClearButton.IsEnabled = false;
             }
+        }
+
+        /// <summary>
+        /// Handles when a point is clicked on the map
+        /// </summary>
+        private void OnPointClicked(GeoPoint point)
+        {
+            if (point == null) return;
+
+            // Show the selected record details
+            ShowRecordDetails(point);
+
+            // Also select the row in the data grid (this will trigger DataGrid_SelectionChanged)
+            var matchingPoint = _loadedPoints.FirstOrDefault(p => p.SourceRowNumber == point.SourceRowNumber);
+            if (matchingPoint != null)
+            {
+                DataGrid.SelectedItem = matchingPoint;
+                DataGrid.ScrollIntoView(matchingPoint);
+            }
+        }
+
+        /// <summary>
+        /// Handles when a row is selected in the DataGrid
+        /// </summary>
+        private void DataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (DataGrid.SelectedItem is GeoPoint selectedPoint)
+            {
+                ShowRecordDetails(selectedPoint);
+            }
+            else
+            {
+                // Hide the panel if nothing is selected
+                HideSelectedRecord();
+            }
+        }
+
+        /// <summary>
+        /// Shows the record details panel with the specified point
+        /// </summary>
+        private void ShowRecordDetails(GeoPoint point)
+        {
+            // Show the selected record panel
+            SelectedRecordPanel.Visibility = Visibility.Visible;
+            
+            // Update the display with the record details
+            SelectedRowText.Text = point.SourceRowNumber.ToString();
+            SelectedLatText.Text = point.Latitude.ToString("F6");
+            SelectedLngText.Text = point.Longitude.ToString("F6");
+            SelectedTypeText.Text = point.SetupType;
+
+            UpdateStatus($"Selected record from Row {point.SourceRowNumber}", false);
+        }
+
+        /// <summary>
+        /// Hides the selected record panel
+        /// </summary>
+        private void HideSelectedRecord()
+        {
+            SelectedRecordPanel.Visibility = Visibility.Collapsed;
+            UpdateStatus("Ready", false);
         }
 
         /// <summary>
