@@ -1,0 +1,197 @@
+﻿<Window x:Class="IndiaMapPlotter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+        Title="India Map Plotter - Geographic Data Visualization" 
+        Height="800" Width="1200"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!-- Button Style -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#2196F3"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1976D2"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#BDBDBD"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Legend Item Style -->
+        <Style x:Key="LegendText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Control Panel -->
+        <Border Grid.Row="0" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" x:Name="LoadExcelButton" Content="📂 Load Excel" 
+                        Style="{StaticResource ModernButton}" Click="LoadExcel_Click" 
+                        ToolTip="Load geographic data from Excel file"/>
+                
+                <Button Grid.Column="1" x:Name="ExportMapButton" Content="💾 Export Map" 
+                        Style="{StaticResource ModernButton}" Click="ExportMap_Click" 
+                        IsEnabled="False" ToolTip="Export map as PNG image"/>
+                
+                <Button Grid.Column="2" x:Name="ClearButton" Content="🗑️ Clear Map" 
+                        Style="{StaticResource ModernButton}" Click="Clear_Click" 
+                        IsEnabled="False" ToolTip="Clear all markers from map"
+                        Background="#F44336"/>
+
+                <!-- Legend -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                    <TextBlock Text="Legend:" FontWeight="Bold" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    
+                    <Ellipse Width="12" Height="12" Fill="Green" Stroke="Black" StrokeThickness="1"/>
+                    <TextBlock Text="2S" Style="{StaticResource LegendText}"/>
+                    
+                    <Ellipse Width="12" Height="12" Fill="Red" Stroke="Black" StrokeThickness="1" Margin="15,0,0,0"/>
+                    <TextBlock Text="3S" Style="{StaticResource LegendText}"/>
+                    
+                    <Ellipse Width="12" Height="12" Fill="Blue" Stroke="Black" StrokeThickness="1" Margin="15,0,0,0"/>
+                    <TextBlock Text="SS" Style="{StaticResource LegendText}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area (Map and Data Grid) -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="250"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Map Control -->
+            <Border Grid.Column="0" BorderBrush="#BDBDBD" BorderThickness="1" CornerRadius="4">
+                <mapsui:MapControl x:Name="MapControl"/>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#E0E0E0"/>
+
+            <!-- Data Preview Panel -->
+            <Border Grid.Column="2" BorderBrush="#BDBDBD" BorderThickness="1" CornerRadius="4" Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Data Grid Header -->
+                    <Border Grid.Row="0" Background="#2196F3" CornerRadius="4,4,0,0" Padding="10">
+                        <TextBlock Text="Data Preview" Foreground="White" FontSize="14" FontWeight="Bold"/>
+                    </Border>
+
+                    <!-- Data Grid -->
+                    <DataGrid Grid.Row="1" x:Name="DataGrid" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True"
+                              AlternatingRowBackground="#F5F5F5"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              SelectionMode="Single"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeRows="False"
+                              Margin="5">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Row" Binding="{Binding SourceRowNumber}" Width="50"/>
+                            <DataGridTextColumn Header="Lat" Binding="{Binding Latitude, StringFormat=F4}" Width="70"/>
+                            <DataGridTextColumn Header="Lng" Binding="{Binding Longitude, StringFormat=F4}" Width="70"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding SetupType}" Width="50"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Error/Warning Panel -->
+        <Expander Grid.Row="2" x:Name="ErrorExpander" Header="Errors and Warnings" 
+                  IsExpanded="False" Visibility="Collapsed" 
+                  Margin="10,0,10,5" Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1">
+            <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="ErrorTextBlock" Padding="10" TextWrapping="Wrap" 
+                          Foreground="#856404" FontFamily="Consolas"/>
+            </ScrollViewer>
+        </Expander>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="3" Background="#263238" Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock x:Name="StatusText" Text="Ready" Foreground="White" 
+                              FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <TextBlock Text="Points Loaded: " Foreground="#B0BEC5" FontSize="12" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="PointsCountText" Text="0" Foreground="White" FontWeight="Bold" 
+                              FontSize="12" VerticalAlignment="Center" Margin="5,0"/>
+                    
+                    <TextBlock Text="| Errors: " Foreground="#B0BEC5" FontSize="12" 
+                              VerticalAlignment="Center" Margin="15,0,0,0"/>
+                    <TextBlock x:Name="ErrorsCountText" Text="0" Foreground="#FF5252" FontWeight="Bold" 
+                              FontSize="12" VerticalAlignment="Center" Margin="5,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Grid x:Name="LoadingOverlay" Grid.Row="0" Grid.RowSpan="4" 
+              Background="#80000000" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="20" Margin="10"/>
+                <TextBlock x:Name="LoadingText" Text="Loading..." Foreground="White" 
+                          FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="10"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
